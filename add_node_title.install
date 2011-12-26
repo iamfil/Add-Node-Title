@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * Implements hook_field_schema().
+ *
+ */
+function add_node_title_schema() {
+	$schema['add_node_title'] = array(
+	'fields' => array(
+		'node_type' => array(
+		'type' => 'varchar',
+		'length' => 32,
+		'not null' => TRUE
+	),
+		'title' => array(
+		'type' => 'varchar',
+		'length' => 255,
+		'not null' => TRUE
+	)),
+	'primary key' => array('node_type'),
+	'indexes' => array(
+		'node_type' => array('node_type')
+	),
+	'foreign keys' => array(
+		'node_type' => array(
+			'table' => 'node_type',
+			'columns' => array( 'type' => 'type')
+	)
+	));
+
+	return $schema;
+}

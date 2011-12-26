@@ -1,0 +1,7 @@
+.project
+.buildpath
+.settings
+.classpath
+.DS_Store
+desktop.ini
+Thumbs.db

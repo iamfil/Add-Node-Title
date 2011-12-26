@@ -1,0 +1,94 @@
+<?php
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ *
+ * This will set the page title on add node pages.
+ *
+ */
+function add_node_title_form_node_form_alter(&$form, &$form_state, $form_id) {
+	$title = db_select('add_node_title')
+	->condition('node_type', $form['#node']->type)
+	->fields('add_node_title', array('title'))
+	->execute()
+	->fetchField();
+
+	if (!empty($title)) {
+		drupal_set_title($title);
+	}
+}
+
+//TODO add translation support
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ *
+ * This will insert a textfield into the content type edit form to allow
+ * specifying a different node creation title.
+ *
+ */
+function add_node_title_form_node_type_form_alter(&$form, &$form_state, $form_id) {
+	$default_value = db_select('add_node_title')
+	->condition('node_type', $form['#node_type']->type)
+	->fields('add_node_title', array('title'))
+	->execute()->fetchField();
+
+	$form['add_node_title'] = array(
+		'#type' => 'fieldset',
+		'#title' => 'Add Node Title',
+		'#collapsible' => TRUE,
+		'#collapsed' => TRUE,
+		'#group' => 'additional_settings',
+		'#attached' => array (
+			'js' => array(drupal_get_path('module', 'add_node_title') . '/add_note_title-form.js')
+	));
+
+	$form['add_node_title']['title'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Add Node Title',
+		'#maxlength' => '255',
+		'#default_value' => !empty($default_value) ? $default_value : '',
+		'#description' => 'Specify a different title to be shown when creating content of this type.',
+		'#element_validate' => array('add_node_title_element_validate')
+	);
+}
+
+//TODO is this the best place to save the title?
+/**
+ * Validation function used in the textfield added by add_node_title_form_node_type_form_alter.
+ *
+ */
+function add_node_title_element_validate($element, &$form_state, $complete_form) {
+	$existing_count = db_select('add_node_title')
+	->condition('node_type', $form_state['values']['type'])
+	->countQuery()
+	->execute()
+	->fetchField();
+
+	if ($existing_count > 0) {
+		//a title already exists, update it
+		db_update('add_node_title')
+		->fields(array('title' => trim($element['#value'])))
+		->condition('node_type', $form_state['values']['type'])
+		->execute();
+
+		return;
+	}
+
+	db_insert('add_node_title')
+	->fields(array(
+			'node_type' => $form_state['values']['type'],
+			'title' => trim($element['#value'])))
+	->execute();
+}
+
+/**
+ * Implements hook_node_type_delete().
+ *
+ * Delete titles that are no longer needed since the node type was deleted.
+ *
+ */
+function add_node_title_node_type_delete($info) {
+	db_delete('add_node_title')
+	->condition('node_type' , $info->type)
+	->execute();
+}
